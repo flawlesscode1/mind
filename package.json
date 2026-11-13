@@ -9,6 +9,7 @@
     "demo": "npm run build && node dist/src/cli.js examples/first_game.mind"
   },
   "devDependencies": {
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "@types/node": "^22.10.0"
   }
 }
