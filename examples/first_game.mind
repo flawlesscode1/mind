@@ -1,0 +1,5 @@
+game "Collect the Star" {
+  player Hero at 0 0;
+  collectible Star at 1 0;
+  win when collected == 1;
+}
