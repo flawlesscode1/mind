@@ -1,3 +1,5 @@
+import { requireVersion } from "./release.js";
+
 export type Entity = { name: string; x: number; y: number };
 export type Program = { title: string; player: Entity; collectibles: Entity[]; target: number };
 export type GameState = { player: Entity; remaining: Entity[]; collected: number; won: boolean };
@@ -10,7 +12,9 @@ function checkCoordinates(entities: Entity[]): void {
   for (const entity of entities) { safeInteger(entity.x); safeInteger(entity.y); }
 }
 
-export function parse(source: string): Program {
+export function parse(source: string, options: { languageVersion?: string } = {}): Program {
+  requireVersion(options.languageVersion);
+  if (source.length > 65536) throw new Error("MIND source exceeds 65536 characters");
   const tokens = source.match(/"[^"\n]*"|==|-?\d+|[A-Za-z_][A-Za-z_0-9]*|[{};]/g) ?? [];
   const normalized = source.replace(/"[^"\n]*"|==|-?\d+|[A-Za-z_][A-Za-z_0-9]*|[{};]/g, "").trim();
   if (normalized) throw new Error("Unsupported character or syntax: " + normalized.slice(0, 30));

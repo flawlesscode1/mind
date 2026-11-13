@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
 import { parse, start, move } from "./mind.js";
+import { projectVersion } from "./project.js";
 const path = process.argv[2];
 if (!path) { console.error("Usage: node dist/src/cli.js <file.mind>"); process.exit(1); }
 try {
-  const program = parse(readFileSync(path, "utf8"));
+  const program = parse(readFileSync(path, "utf8"), { languageVersion: await projectVersion(path) });
   let state = start(program);
   console.log("MIND:", program.title);
   console.log("Initial:", JSON.stringify(state));

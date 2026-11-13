@@ -1,0 +1,206 @@
+[
+  {
+    "id": "collect-once",
+    "source": "game \"Conformance\" { player P at 0 0; collectible C at 1 0; collectible D at 2 0; win when collected == 2; }",
+    "capabilities": [
+      "player",
+      "collectible",
+      "movement",
+      "win"
+    ],
+    "actions": [
+      {
+        "type": "move",
+        "dx": 1,
+        "dy": 0
+      },
+      {
+        "type": "move",
+        "dx": -1,
+        "dy": 0
+      },
+      {
+        "type": "move",
+        "dx": 2,
+        "dy": 0
+      },
+      {
+        "type": "move",
+        "dx": 4,
+        "dy": 0
+      }
+    ],
+    "expect": {
+      "states": [
+        {
+          "player": {
+            "name": "P",
+            "x": 0,
+            "y": 0
+          },
+          "remaining": [
+            {
+              "name": "C",
+              "x": 1,
+              "y": 0
+            },
+            {
+              "name": "D",
+              "x": 2,
+              "y": 0
+            }
+          ],
+          "collected": 0,
+          "won": false
+        },
+        {
+          "player": {
+            "name": "P",
+            "x": 1,
+            "y": 0
+          },
+          "remaining": [
+            {
+              "name": "D",
+              "x": 2,
+              "y": 0
+            }
+          ],
+          "collected": 1,
+          "won": false
+        },
+        {
+          "player": {
+            "name": "P",
+            "x": 0,
+            "y": 0
+          },
+          "remaining": [
+            {
+              "name": "D",
+              "x": 2,
+              "y": 0
+            }
+          ],
+          "collected": 1,
+          "won": false
+        },
+        {
+          "player": {
+            "name": "P",
+            "x": 2,
+            "y": 0
+          },
+          "remaining": [],
+          "collected": 2,
+          "won": true
+        },
+        {
+          "player": {
+            "name": "P",
+            "x": 2,
+            "y": 0
+          },
+          "remaining": [],
+          "collected": 2,
+          "won": true
+        }
+      ]
+    }
+  },
+  {
+    "id": "negative-coordinates",
+    "source": "game \"Conformance\" { player P at 0 0; collectible C at 1 0; collectible D at 2 0; win when collected == 2; }",
+    "capabilities": [
+      "movement"
+    ],
+    "actions": [
+      {
+        "type": "move",
+        "dx": -2,
+        "dy": -1
+      }
+    ],
+    "expect": {
+      "states": [
+        {
+          "player": {
+            "name": "P",
+            "x": 0,
+            "y": 0
+          },
+          "remaining": [
+            {
+              "name": "C",
+              "x": 1,
+              "y": 0
+            },
+            {
+              "name": "D",
+              "x": 2,
+              "y": 0
+            }
+          ],
+          "collected": 0,
+          "won": false
+        },
+        {
+          "player": {
+            "name": "P",
+            "x": -2,
+            "y": -1
+          },
+          "remaining": [
+            {
+              "name": "C",
+              "x": 1,
+              "y": 0
+            },
+            {
+              "name": "D",
+              "x": 2,
+              "y": 0
+            }
+          ],
+          "collected": 0,
+          "won": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "unknown-statement",
+    "source": "game \"Conformance\" { vehicle P at 0 0; collectible C at 1 0; collectible D at 2 0; win when collected == 2; }",
+    "expect": {
+      "error": "Unsupported statement"
+    }
+  },
+  {
+    "id": "duplicate-name",
+    "source": "game \"Conformance\" { player P at 0 0; collectible P at 1 0; collectible D at 2 0; win when collected == 2; }",
+    "expect": {
+      "error": "Duplicate entity"
+    }
+  },
+  {
+    "id": "unsafe-integer",
+    "source": "game \"Conformance\" { player P at 9007199254740993 0; collectible C at 1 0; collectible D at 2 0; win when collected == 2; }",
+    "expect": {
+      "error": "safe integer"
+    }
+  },
+  {
+    "id": "missing-player",
+    "source": "game \"Conformance\" {  collectible C at 1 0; collectible D at 2 0; win when collected == 2; }",
+    "expect": {
+      "error": "required"
+    }
+  },
+  {
+    "id": "trailing-input",
+    "source": "game \"Conformance\" { player P at 0 0; collectible C at 1 0; collectible D at 2 0; win when collected == 2; } game \"Extra\" {}",
+    "expect": {
+      "error": "Trailing tokens"
+    }
+  }
+]

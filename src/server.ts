@@ -8,6 +8,8 @@ const port = Number(process.env.PORT ?? 3000);
 const routes: Record<string, [string, string]> = {
   "/": ["web/index.html", "text/html; charset=utf-8"],
   "/game.mind": ["examples/first_game.mind", "text/plain; charset=utf-8"],
+  "/release.js": ["dist/src/release.js", "text/javascript; charset=utf-8"],
+  "/mind.json": ["mind.json", "application/json"],
   "/mind.js": ["dist/src/mind.js", "text/javascript; charset=utf-8"]
 };
 export function createGameServer() {
@@ -21,7 +23,10 @@ export function createGameServer() {
       const body = await readFile(resolve(root, route[0]));
       res.writeHead(200, { "Content-Type": route[1], "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
       res.end(body);
-    } catch { res.writeHead(500); res.end("Unable to load game resource"); }
+    } catch (error) {
+      if (pathname === "/mind.json" && (error as NodeJS.ErrnoException).code === "ENOENT") { res.writeHead(404); res.end("Unpinned project"); return; }
+      res.writeHead(500); res.end("Unable to load game resource");
+    }
   });
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

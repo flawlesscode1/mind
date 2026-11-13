@@ -1,0 +1,13 @@
+{
+  "baseLanguageVersion": "0.1.0",
+  "title": "Gravity and jumping",
+  "motivation": "Support deterministic platformer mechanics.",
+  "syntax": "Design request only: gravity and jumping are not released syntax.",
+  "semantics": "A tick applies downward acceleration; jump applies an upward impulse. Units, collision rules and safe numeric bounds require maintainer design review.",
+  "tests": "Data-only acceptance fixtures in gravity-jumping.tests.json must pass against executable semantics.",
+  "compatibility": "Existing discrete move behavior must remain unchanged.",
+  "capabilities": [
+    "gravity",
+    "jumping"
+  ]
+}
