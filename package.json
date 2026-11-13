@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "test": "npm run build && node --test dist/tests",
-    "demo": "npm run build && node dist/src/cli.js examples/first_game.mind"
+    "demo": "npm run build && node dist/src/cli.js examples/first_game.mind",
+    "play": "npm run build && node dist/src/server.js"
   },
   "devDependencies": {
     "typescript": "^5.7.3",
