@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --test dist/tests/*.test.js",
+    "test": "npm run build && node --test dist/tests",
     "demo": "npm run build && node dist/src/cli.js examples/first_game.mind"
   },
   "devDependencies": {
