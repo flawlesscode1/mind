@@ -15,4 +15,4 @@ Identifiers start with a letter or underscore and contain letters, digits, or un
 
 ## Semantics
 
-A program declares exactly one game, one player, zero or more collectibles, and a required win target. The interpreter creates a deterministic game state. A `move` action changes player coordinates by integer deltas; collectibles at the player's new coordinates are collected once. Victory occurs when the collected count reaches the win target. This prototype has no rendering, physics, MCP server, or AI extension system yet.
+A program declares exactly one game, one player, zero or more collectibles, and a required win target. The interpreter creates a deterministic game state. A `move` action changes player coordinates by integer deltas; collectibles at the player's new coordinates are collected once. Victory occurs when the collected count reaches the win target. The separate browser runtime provides basic canvas rendering. A separate MCP server exposes the spec, capability checks, validation, and proposal submission. Physics and autonomous AI extension implementation are not supported yet.
