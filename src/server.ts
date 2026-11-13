@@ -10,13 +10,20 @@ const routes: Record<string, [string, string]> = {
   "/game.mind": ["examples/first_game.mind", "text/plain; charset=utf-8"],
   "/mind.js": ["dist/src/mind.js", "text/javascript; charset=utf-8"]
 };
-const server = createServer(async (req, res) => {
-  const route = routes[new URL(req.url ?? "/", "http://localhost").pathname];
-  if (!route) { res.writeHead(404); res.end("Not found"); return; }
-  try {
-    const body = await readFile(resolve(root, route[0]));
-    res.writeHead(200, { "Content-Type": route[1], "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
-    res.end(body);
-  } catch { res.writeHead(500); res.end("Unable to load game resource"); }
-});
-server.listen(port, "127.0.0.1", () => console.log(`MIND browser runtime: http://127.0.0.1:${port}`));
+export function createGameServer() {
+  return createServer(async (req, res) => {
+    let pathname: string;
+    try { pathname = new URL(req.url ?? "/", "http://localhost").pathname; }
+    catch { res.writeHead(400); res.end("Invalid request target"); return; }
+    const route = Object.hasOwn(routes, pathname) ? routes[pathname] : undefined;
+    if (!route) { res.writeHead(404); res.end("Not found"); return; }
+    try {
+      const body = await readFile(resolve(root, route[0]));
+      res.writeHead(200, { "Content-Type": route[1], "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
+      res.end(body);
+    } catch { res.writeHead(500); res.end("Unable to load game resource"); }
+  });
+}
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  createGameServer().listen(port, "127.0.0.1", () => console.log(`MIND browser runtime: http://127.0.0.1:${port}`));
+}

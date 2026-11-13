@@ -2,6 +2,14 @@ export type Entity = { name: string; x: number; y: number };
 export type Program = { title: string; player: Entity; collectibles: Entity[]; target: number };
 export type GameState = { player: Entity; remaining: Entity[]; collected: number; won: boolean };
 
+function safeInteger(value: number): number {
+  if (!Number.isSafeInteger(value)) throw new Error("Expected safe integer between -9007199254740991 and 9007199254740991");
+  return value;
+}
+function checkCoordinates(entities: Entity[]): void {
+  for (const entity of entities) { safeInteger(entity.x); safeInteger(entity.y); }
+}
+
 export function parse(source: string): Program {
   const tokens = source.match(/"[^"\n]*"|==|-?\d+|[A-Za-z_][A-Za-z_0-9]*|[{};]/g) ?? [];
   const normalized = source.replace(/"[^"\n]*"|==|-?\d+|[A-Za-z_][A-Za-z_0-9]*|[{};]/g, "").trim();
@@ -10,7 +18,7 @@ export function parse(source: string): Program {
   const take = () => { if (i >= tokens.length) throw new Error("Unexpected end of program"); return tokens[i++]; };
   const expect = (s: string) => { const got = take(); if (got !== s) throw new Error(`Expected ${s}, got ${got}`); };
   const ident = () => { const v = take(); if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(v)) throw new Error("Expected identifier"); return v; };
-  const num = () => { const v = take(); if (!/^-?\d+$/.test(v)) throw new Error("Expected integer"); return Number(v); };
+  const num = () => { const v = take(); if (!/^-?\d+$/.test(v)) throw new Error("Expected integer"); return safeInteger(Number(v)); };
   expect("game");
   const quoted = take();
   if (!/^"[^"\n]*"$/.test(quoted)) throw new Error("Expected quoted game title");
@@ -48,13 +56,17 @@ export function parse(source: string): Program {
 }
 
 export function start(program: Program): GameState {
+  checkCoordinates([program.player, ...program.collectibles]);
+  safeInteger(program.target);
   return { player: { ...program.player }, remaining: program.collectibles.map(x => ({ ...x })), collected: 0, won: false };
 }
 export function move(program: Program, state: GameState, dx: number, dy: number): GameState {
-  if (!Number.isInteger(dx) || !Number.isInteger(dy)) throw new Error("Movement must use integer deltas");
+  safeInteger(dx); safeInteger(dy);
+  checkCoordinates([state.player, ...state.remaining]);
+  safeInteger(program.target); safeInteger(state.collected);
   if (state.won) return state;
-  const player = { ...state.player, x: state.player.x + dx, y: state.player.y + dy };
+  const player = { ...state.player, x: safeInteger(state.player.x + dx), y: safeInteger(state.player.y + dy) };
   const remaining = state.remaining.filter(e => e.x !== player.x || e.y !== player.y);
-  const collected = state.collected + state.remaining.length - remaining.length;
+  const collected = safeInteger(state.collected + (state.remaining.length - remaining.length));
   return { player, remaining, collected, won: collected >= program.target };
 }

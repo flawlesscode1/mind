@@ -10,6 +10,6 @@ export const capabilities = {
 } as const;
 export function checkCapability(name: string) {
   const key = name.trim().toLowerCase() as keyof typeof capabilities;
-  const entry = capabilities[key];
+  const entry = Object.hasOwn(capabilities, key) ? capabilities[key] : undefined;
   return entry ? { name: key, ...entry, languageVersion: "0.1.0" } : { name: key, supported: false, detail: "Unknown capability; requires review", languageVersion: "0.1.0" };
 }
