@@ -27,6 +27,9 @@ async function browserModule(path) {
   await copyFile(path, resolve(output, name));
 }
 await browserModule(resolve("dist/src/mind.js"));
+await browserModule(resolve("dist/src/program-workflow.js"));
+await copyFile("web/workflow-ui.js", resolve(output, "workflow-ui.js"));
+await copyFile("examples/two-stars.handoff.json", resolve(output, "two-stars.handoff.json"));
 // Preserve project pins when building after PR #2 is merged.
 try { await copyFile("mind.json", resolve(output, "mind.json")); }
 catch (error) { if (error.code !== "ENOENT") throw error; }

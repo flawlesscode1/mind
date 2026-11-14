@@ -10,6 +10,10 @@ const routes: Record<string, [string, string]> = {
   "/game.mind": ["examples/first_game.mind", "text/plain; charset=utf-8"],
   "/release.js": ["dist/src/release.js", "text/javascript; charset=utf-8"],
   "/mind.json": ["mind.json", "application/json"],
+  "/workflow-ui.js": ["web/workflow-ui.js", "text/javascript; charset=utf-8"],
+  "/program-workflow.js": ["dist/src/program-workflow.js", "text/javascript; charset=utf-8"],
+  "/capabilities.js": ["dist/src/capabilities.js", "text/javascript; charset=utf-8"],
+  "/two-stars.handoff.json": ["examples/two-stars.handoff.json", "application/json"],
   "/mind.js": ["dist/src/mind.js", "text/javascript; charset=utf-8"]
 };
 export function createGameServer(gameFile = resolve(root, "examples/first_game.mind")) {
