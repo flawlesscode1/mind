@@ -1,10 +1,13 @@
+import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile, copyFile, rm } from "node:fs/promises";
 import { resolve, dirname, relative } from "node:path";
 
 const output = resolve("_site");
 await rm(output, { recursive: true, force: true });
 await mkdir(output);
-await copyFile("web/index.html", resolve(output, "index.html"));
+const revision = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+const html = (await readFile("web/index.html", "utf8")).replace("</head>", `<meta name="mind-build" content="${revision}"></head>`);
+await writeFile(resolve(output, "index.html"), html);
 await copyFile("examples/yc_collect.mind", resolve(output, "game.mind"));
 await writeFile(resolve(output, ".nojekyll"), "");
 // Copy the actual compiler output and its relative browser-module dependencies.

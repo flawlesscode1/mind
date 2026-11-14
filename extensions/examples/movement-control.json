@@ -1,0 +1,12 @@
+{
+  "baseLanguageVersion": "0.1.0",
+  "title": "Movement compatibility control",
+  "motivation": "Exercise the lifecycle with existing executable semantics.",
+  "syntax": "Existing v0.1 movement API; no new syntax.",
+  "semantics": "Preserve deterministic discrete destination movement.",
+  "tests": "Use conformance/v0.1.json unchanged.",
+  "compatibility": "Existing discrete move behavior must remain unchanged.",
+  "capabilities": [
+    "movement"
+  ]
+}

@@ -59,7 +59,11 @@ try{
   const source=await response.text();
   const sourceView=document.querySelector("#source-code");
   if(sourceView)sourceView.textContent=source;
-  const candidate=parse(source);
+  const configResponse=await fetch("./mind.json");
+  if(!configResponse.ok && configResponse.status!==404)throw new Error("Unable to load mind.json");
+  const config=configResponse.ok?await configResponse.json():undefined;
+  if(configResponse.ok && (!config || typeof config.languageVersion!=="string"))throw new Error("mind.json requires languageVersion");
+  const candidate=parse(source,{languageVersion:config?.languageVersion});
   const all=[candidate.player,...candidate.collectibles];
   if(all.some(e=>e.x<0||e.y<0||e.x>=cols||e.y>=rows))throw new Error("Entity outside 16×12 demo grid");
   program=candidate;

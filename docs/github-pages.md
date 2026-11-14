@@ -43,3 +43,10 @@ The page reuses the existing game controls and rendering. A source editor/Valida
 At commit `e970f0d`, [Actions run 43537481932](https://github.com/flawlesscode1/mind/actions/runs/43537481932) passed installation, all 16 automated tests, static compilation, real Chromium tests at `/` and `/mind/`, and Pages artifact upload on Ubuntu 24.04. The deploy job then failed during initial configuration: Pages returned `Not Found`, and creating the site returned `Resource not accessible by integration`.
 
 A repository administrator must select **Settings → Pages → Build and deployment → Source → GitHub Actions**. The connected GitHub App and the workflow token cannot make that initial administrative setting. Once enabled, rerun the failed deploy job (or push this branch), then run the public HTTPS smoke test. No public URL is asserted by this initial evidence.
+
+
+## Combined versioning/security integration
+
+The deployment branch now incorporates PR #2 with conflicts resolved. Both proposal-storage and static-output ignore rules are retained. Package scripts retain the provenance build and extension CLI alongside the static build/test commands. The browser uses deployment-relative URLs and preserves exact version-pin validation before play. PR #2's proposal/signature/verification implementation and maintainer policy are unchanged.
+
+The merge order for these tested combined commits is PR #3 → PR #2 → PR #4 (retargeted to main after the first two merge). The Pages workflow includes a post-deployment public Chromium test using the exact URL returned by GitHub and asserts the served build revision, actual interpreter behavior, source, victory, and Restart. That test runs in GitHub Actions because this Cloud environment's outbound policy does not allow the GitHub Pages domain.

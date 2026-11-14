@@ -35,6 +35,9 @@ try {
     const requested = []; page.on("request", req => requested.push(req.url()));
     const response = await page.goto(url);
     assert.equal(response.status(), 200);
+    if (process.env.MIND_EXPECTED_REVISION) {
+      assert.equal(await page.locator('meta[name="mind-build"]').getAttribute("content"), process.env.MIND_EXPECTED_REVISION, "Public site must match the deployed commit");
+    }
     await page.waitForFunction(() => document.querySelector("#status")?.textContent === "Collected 0/3");
     assert.match(await page.title(), /MIND/);
     assert.match(await page.locator("#source-code").textContent(), /collectible Third at 7 1/);

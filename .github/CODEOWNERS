@@ -1,0 +1,8 @@
+# Enforce required code-owner review through GitHub branch protection settings.
+/src/release.ts @flawlesscode1
+/src/proposals.ts @flawlesscode1
+/src/provenance.ts @flawlesscode1
+/src/conformance.ts @flawlesscode1
+/extensions/maintainers.json @flawlesscode1
+/conformance/ @flawlesscode1
+/.github/ @flawlesscode1
