@@ -19,6 +19,7 @@ textarea,input{box-sizing:border-box;width:100%;background:#19243b;color:#f4f7ff
 <section aria-label="Program workshop">
 <h2>Inspect and run a program change</h2>
 <p>Describe a change, give the prepared prompt to your external coding agent, and bring its result back here. This page does not call an AI model. You can also paste source manually.</p>
+<fieldset id="workshop-fields" disabled>
 <label for="request">Your request</label><textarea id="request" rows="2" maxlength="4096">Change Three Stars to Two Stars Together: Hero at (1,2), collectibles at (3,2) and (5,2); win after both.</textarea>
 <button id="prepare-prompt" type="button">Prepare prompt for external agent</button>
 <label for="agent-prompt">Prompt to copy into your coding agent</label><textarea id="agent-prompt" rows="4" readonly></textarea>
@@ -34,6 +35,7 @@ textarea,input{box-sizing:border-box;width:100%;background:#19243b;color:#f4f7ff
 <p id="review-status" role="status">No candidate inspected yet.</p>
 <pre id="program-review" aria-label="Program inspection"></pre>
 <p id="execution-status" role="status">The bundled game is running above. Candidate changes do not run until you approve them.</p>
+</fieldset>
 </section>
 <section aria-label="About MIND">
 <h2>A language for humans and AI agents</h2>
@@ -98,10 +100,12 @@ try{
   const source=await response.text();
   const sourceView=document.querySelector("#source-code");
   if(sourceView)sourceView.textContent=source;
+  canvas.dataset.sourceLoaded="true";
   const configResponse=await fetch("./mind.json");
   if(!configResponse.ok && configResponse.status!==404)throw new Error("Unable to load mind.json");
   const config=configResponse.ok?await configResponse.json():undefined;
   if(configResponse.ok && (!config || typeof config.languageVersion!=="string"))throw new Error("mind.json requires languageVersion");
+  canvas.dataset.initialVersion=config?.languageVersion??"";
   const candidate=parse(source,{languageVersion:config?.languageVersion});
   const all=[candidate.player,...candidate.collectibles];
   if(all.some(e=>e.x<0||e.y<0||e.x>=cols||e.y>=rows))throw new Error("Entity outside 16×12 demo grid");
@@ -109,7 +113,9 @@ try{
   title.textContent=program.title+" — MIND";
   reset();
   document.querySelector("#restart").disabled=false;
+  canvas.dataset.initialSucceeded="true";
 }catch(error){program=undefined;state=undefined;document.querySelector("#restart").disabled=true;status.textContent="Error: "+error.message;console.error(error)}
+finally{canvas.dataset.runtimeReady="true";window.dispatchEvent(new Event("mind:runtime-ready"))}
 </script>
 <script type="module" src="./workflow-ui.js"></script>
 </body></html>

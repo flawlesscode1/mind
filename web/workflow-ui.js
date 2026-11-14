@@ -1,4 +1,5 @@
 import { inspectProgram, previewProgram, readHandoff, agentPrompt } from "./program-workflow.js";
+import { release } from "./release.js";
 const el = id => document.getElementById(id);
 const source = el("draft-source"), version = el("draft-version"), capabilities = el("draft-capabilities");
 const approve = el("approve-program"), review = el("program-review"), status = el("review-status"), execution = el("execution-status");
@@ -43,7 +44,7 @@ el("inspect-program").addEventListener("click", () => {
     const summary = p ? `Game: ${p.title}\nPlayer: ${p.player.name} at (${p.player.x}, ${p.player.y})\nCollectibles: ${p.collectibles.map(e => `${e.name} at (${e.x}, ${e.y})`).join("; ")}\nExpected victory: collect ${p.target}. Collection happens at each movement destination.\n` : "No executable program could be parsed.\n";
     review.textContent = summary + `\nLanguage version: ${report.languageVersion}\nSyntax/semantics: ${report.valid ? "valid" : "invalid"}\nDeclared capabilities: ${report.capabilities.map(c => c.name + ": " + (c.supported ? "supported" : "unavailable")).join("; ") || "none supplied (request intent is not inferred)"}\nBrowser runnable: ${report.canRunInBrowser}\n${report.errors.join("\n")}\n\n${report.changes.note}\n` + report.changes.removed.map(s => "- " + s).join("\n") + "\n" + report.changes.added.map(s => "+ " + s).join("\n") + (report.changes.truncated ? "\nChanges truncated; inspect full source." : "");
     status.textContent = report.canRunInBrowser ? "Valid for this browser. Inspect the source and changes, then approve if they match your intent." : "Cannot run this candidate. " + report.errors.join(" ");
-    if (report.canRunInBrowser) { inspected = input; approve.disabled = false; }
+    if (report.canRunInBrowser) { inspected = { input, request: el("request").value }; approve.disabled = false; }
     const preview = previewProgram(input);
     execution.textContent = "Read-only interpreter preview (not applied): " + JSON.stringify(preview);
   } catch (error) { status.textContent = "Inspection error: " + error.message; }
@@ -53,8 +54,8 @@ approve.addEventListener("click", () => {
   // Recheck the current fields as well as input events: an old inspection must
   // never authorize a newer source/version/capability set.
   const expected = { source: source.value, beforeSource: activeSource, languageVersion: version.value, requestedCapabilities: capabilities.value.split(",").map(s => s.trim()).filter(Boolean) };
-  if (JSON.stringify(expected) !== JSON.stringify(inspected)) { invalidate(); return; }
-  const snapshot = inspected;
+  if (JSON.stringify({ input: expected, request: el("request").value }) !== JSON.stringify(inspected)) { invalidate(); return; }
+  const snapshot = inspected.input;
   invalidate();
   window.dispatchEvent(new CustomEvent("mind:run-reviewed", { detail: snapshot }));
 });
@@ -66,11 +67,12 @@ window.addEventListener("mind:execution-result", event => {
   } else execution.textContent = "Execution error: " + event.detail.error;
 });
 try {
-  const response = await fetch("./game.mind");
-  if (!response.ok) throw new Error("Unable to load current source");
-  activeSource = await response.text(); source.value = activeSource;
-  const config = await fetch("./mind.json");
-  if (!config.ok && config.status !== 404) throw new Error("Unable to load mind.json");
-  if (config.ok) version.value = (await config.json()).languageVersion;
+  const canvas = el("game");
+  if (canvas.dataset.runtimeReady !== "true") await new Promise(resolve => window.addEventListener("mind:runtime-ready", resolve, { once: true }));
+  const initialSource = canvas.dataset.sourceLoaded === "true" ? el("source-code").textContent : "";
+  activeSource = canvas.dataset.initialSucceeded === "true" ? initialSource : "";
+  source.value = initialSource;
+  version.value = canvas.dataset.initialVersion || release.languageVersion;
   el("agent-prompt").value = agentPrompt(el("request").value);
 } catch (error) { status.textContent = "Workshop loading error: " + error.message; }
+finally { el("workshop-fields").disabled = false; }

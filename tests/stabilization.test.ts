@@ -81,13 +81,13 @@ async function browser(sourceText: string, config?: unknown) {
   const restart = { disabled: true, addEventListener: (_: string, listener: () => void) => { listeners.restart = listener; } };
   const ctx = new Proxy({}, { get: () => () => {} });
   const elements: Record<string, unknown> = {
-    "#game": { width: 640, height: 480, getContext: () => ctx },
+    "#game": { width: 640, height: 480, dataset: {}, getContext: () => ctx },
     "#status": status, "#title": { textContent: "" }, "#restart": restart
   };
   await runInNewContext(`(async () => {${script}\n})()`, {
-    parse, move, start: (p: Parameters<typeof start>[0]) => { starts++; return start(p); },
+    Event, parse, move, start: (p: Parameters<typeof start>[0]) => { starts++; return start(p); },
     document: { querySelector: (key: string) => elements[key] },
-    window: { addEventListener: (key: string, listener: () => void) => { listeners[key] = listener; } },
+    window: { dispatchEvent: () => {}, addEventListener: (key: string, listener: () => void) => { listeners[key] = listener; } },
     fetch: async (url: string) => url === "./mind.json" ? (config === undefined ? { ok: false, status: 404 } : { ok: true, json: async () => config }) : ({ ok: true, text: async () => sourceText }),
     console: { error: () => {} }
   });

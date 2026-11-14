@@ -46,6 +46,8 @@ test("unsupported versions, syntax, browser bounds and capabilities are reported
 test("handoff and request bounds prevent execution instructions from becoming host code", () => {
   const p = readHandoff({ ...handoff, ignoredCode: "import('node:child_process')" });
   assert.equal("ignoredCode" in p, false);
+  const { requestedCapabilities: omitted, ...missing } = handoff;
+  assert.throws(() => readHandoff(missing), /requires requestedCapabilities/);
   assert.match(agentPrompt("Make two collectibles"), /mind_inspect_program/);
   assert.match(agentPrompt("Make two collectibles"), /A human will inspect/);
   assert.throws(() => agentPrompt("x".repeat(4097)), /oversized/);

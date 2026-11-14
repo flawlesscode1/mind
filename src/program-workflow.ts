@@ -20,6 +20,7 @@ export function readHandoff(value: unknown): ProgramHandoff {
   bounded(p.request, 4096, "request"); bounded(p.source, 65536, "source");
   // Unsupported pins remain visible for inspection; they are never silently upgraded.
   bounded(p.languageVersion, 64, "languageVersion");
+  if (!Array.isArray(p.requestedCapabilities)) throw new Error("Handoff requires requestedCapabilities array (empty is explicit)");
   requested(p.requestedCapabilities);
   if (!p.provenance || !["external-agent", "manual"].includes(p.provenance.kind)) throw new Error("Expected external-agent or manual provenance");
   if (p.provenance.agent !== undefined) bounded(p.provenance.agent, 128, "agent name");

@@ -29,6 +29,21 @@ if (publicUrl) {
 let browser;
 try {
   browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {}) });
+  if (!publicUrl) {
+    const delayed = await browser.newPage(); let releaseInitial; let requests = 0;
+    await delayed.route("**/game.mind", async route => {
+      requests++; await new Promise(resolve => { releaseInitial = resolve; }); await route.continue();
+    });
+    await delayed.goto(urls[0], { waitUntil: "commit" });
+    await delayed.locator("#workshop-fields").waitFor();
+    assert.equal(await delayed.locator("#inspect-program").isEnabled(), false, "Cannot inspect/apply while the initial runtime is loading");
+    while (!releaseInitial) await new Promise(resolve => setTimeout(resolve, 10));
+    releaseInitial();
+    await delayed.waitForFunction(() => document.querySelector("#game").dataset.runtimeReady === "true");
+    await delayed.waitForFunction(() => !document.querySelector("#workshop-fields").disabled);
+    assert.equal(requests, 1, "The workshop must use the running source, not a competing source fetch");
+    await delayed.close();
+  }
   for (const url of urls) {
     const page = await browser.newPage();
     const errors = []; page.on("pageerror", error => errors.push(error.message));
@@ -76,6 +91,11 @@ try {
     assert.match(await page.locator("#program-review").textContent(), /-   collectible Third at 7 1;/);
     assert.equal(await page.locator("#approve-program").isEnabled(), true);
     const candidate = await page.locator("#draft-source").inputValue();
+    const originalRequest = await page.locator("#request").inputValue();
+    await page.locator("#request").fill("A different human request");
+    assert.equal(await page.locator("#approve-program").isEnabled(), false, "Request edits invalidate inspection");
+    await page.locator("#request").fill(originalRequest);
+    await page.getByRole("button", { name: "Inspect and validate", exact: true }).click();
     await page.locator("#draft-source").fill(candidate + "\n");
     assert.equal(await page.locator("#approve-program").isEnabled(), false, "Source edits invalidate inspection");
     await page.locator("#draft-capabilities").fill("gravity");
