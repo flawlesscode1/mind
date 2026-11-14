@@ -1,0 +1,6 @@
+game "Two Stars Together" {
+  player Hero at 1 2;
+  collectible First at 3 2;
+  collectible Second at 5 2;
+  win when collected == 2;
+}
