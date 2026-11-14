@@ -73,7 +73,7 @@ test("malformed HTTP target returns 400 and server continues serving", async () 
 async function browser(sourceText: string) {
   const html = await readFile("web/index.html", "utf8");
   const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)![1]
-    .replace('import { parse, start, move } from "/mind.js";', "");
+    .replace('import { parse, start, move } from "./mind.js";', "");
   type KeyEvent = { key: string; preventDefault?: () => void };
   const listeners: Record<string, (event?: KeyEvent) => void> = {};
   let starts = 0;
