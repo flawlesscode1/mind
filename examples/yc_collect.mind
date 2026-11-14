@@ -1,0 +1,7 @@
+game "Three Stars" {
+  player Hero at 1 1;
+  collectible First at 3 1;
+  collectible Second at 5 1;
+  collectible Third at 7 1;
+  win when collected == 3;
+}
