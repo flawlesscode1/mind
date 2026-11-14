@@ -39,7 +39,7 @@ test("browser serves the selected genuine source while the default example remai
       const source = await (await fetch(`http://127.0.0.1:${address.port}/game.mind`)).text();
       assert.equal(source, await readFile(filename ?? "examples/first_game.mind", "utf8"));
       const page = await (await fetch(`http://127.0.0.1:${address.port}/`)).text();
-      assert.match(page, /href="\/game.mind"/);
+      assert.match(page, /href="\.\/game.mind"/);
     } finally { await new Promise<void>((resolve, reject) => server.close(e => e ? reject(e) : resolve())); }
   }
 });

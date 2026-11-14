@@ -73,7 +73,7 @@ test("malformed HTTP target returns 400 and server continues serving", async () 
 async function browser(sourceText: string, config?: unknown) {
   const html = await readFile("web/index.html", "utf8");
   const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)![1]
-    .replace('import { parse, start, move } from "/mind.js";', "");
+    .replace('import { parse, start, move } from "./mind.js";', "");
   type KeyEvent = { key: string; preventDefault?: () => void };
   const listeners: Record<string, (event?: KeyEvent) => void> = {};
   let starts = 0;
@@ -88,7 +88,7 @@ async function browser(sourceText: string, config?: unknown) {
     parse, move, start: (p: Parameters<typeof start>[0]) => { starts++; return start(p); },
     document: { querySelector: (key: string) => elements[key] },
     window: { addEventListener: (key: string, listener: () => void) => { listeners[key] = listener; } },
-    fetch: async (url: string) => url === "/mind.json" ? (config === undefined ? { ok: false, status: 404 } : { ok: true, json: async () => config }) : ({ ok: true, text: async () => sourceText }),
+    fetch: async (url: string) => url === "./mind.json" ? (config === undefined ? { ok: false, status: 404 } : { ok: true, json: async () => config }) : ({ ok: true, text: async () => sourceText }),
     console: { error: () => {} }
   });
   return { status, restart, listeners, starts: () => starts };

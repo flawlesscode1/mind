@@ -9,11 +9,14 @@
     "demo": "npm run build && node dist/src/cli.js examples/first_game.mind",
     "play": "npm run build && node dist/src/server.js",
     "mcp": "npm run build && node dist/src/mcp.js",
+    "build:pages": "npm run build && node scripts/build-pages.mjs",
+    "test:pages": "node scripts/test-pages.mjs",
     "extension": "npm run build && node dist/src/extensions-cli.js"
   },
   "devDependencies": {
     "typescript": "^5.7.3",
-    "@types/node": "^22.10.0"
+    "@types/node": "^22.10.0",
+    "playwright": "1.58.2"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2"

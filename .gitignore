@@ -148,5 +148,8 @@ vite.config.ts.timestamp-*
 # Turbo Repo
 .turbo
 
+# Generated GitHub Pages output
+_site/
+
 # Local untrusted extension intake and verification evidence
 extensions/proposals/
