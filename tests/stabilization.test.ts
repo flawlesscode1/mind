@@ -70,7 +70,7 @@ test("malformed HTTP target returns 400 and server continues serving", async () 
 
 // Execute the actual browser module with a minimal DOM/canvas adapter. This tests
 // initialization and event behavior without maintaining a second implementation.
-async function browser(sourceText: string) {
+async function browser(sourceText: string, config?: unknown) {
   const html = await readFile("web/index.html", "utf8");
   const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)![1]
     .replace('import { parse, start, move } from "/mind.js";', "");
@@ -88,7 +88,7 @@ async function browser(sourceText: string) {
     parse, move, start: (p: Parameters<typeof start>[0]) => { starts++; return start(p); },
     document: { querySelector: (key: string) => elements[key] },
     window: { addEventListener: (key: string, listener: () => void) => { listeners[key] = listener; } },
-    fetch: async () => ({ ok: true, text: async () => sourceText }),
+    fetch: async (url: string) => url === "/mind.json" ? (config === undefined ? { ok: false, status: 404 } : { ok: true, json: async () => config }) : ({ ok: true, text: async () => sourceText }),
     console: { error: () => {} }
   });
   return { status, restart, listeners, starts: () => starts };
@@ -134,4 +134,17 @@ test("MCP validator reports numeric limits but accepts browser-only out-of-grid 
     const capability = await client.callTool({ name: "mind_check_capability", arguments: { name: "__proto__" } });
     assert.match(JSON.stringify(capability.content), /supported\\": false/);
   } finally { await client.close(); }
+});
+
+
+test("browser respects supported project pins and fails closed on unsupported pins", async () => {
+  const valid = await browser(source(), { languageVersion: "0.1.0" });
+  assert.equal(valid.restart.disabled, false);
+  for (const config of [{ languageVersion: "99.0.0" }, {}]) {
+    const page = await browser(source(), config);
+    assert.equal(page.restart.disabled, true);
+    assert.match(page.status.textContent, config.languageVersion ? /Unsupported MIND/ : /requires languageVersion/);
+    page.listeners.restart();
+    assert.equal(page.starts(), 0);
+  }
 });

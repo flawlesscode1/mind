@@ -48,7 +48,11 @@ window.addEventListener("keydown",event=>{
 try{
   const response=await fetch("/game.mind");
   if(!response.ok)throw new Error("Unable to load .mind source");
-  const candidate=parse(await response.text());
+  const configResponse=await fetch("/mind.json");
+  if(!configResponse.ok && configResponse.status!==404)throw new Error("Unable to load mind.json");
+  const config=configResponse.ok?await configResponse.json():undefined;
+  if(configResponse.ok && (!config || typeof config.languageVersion!=="string"))throw new Error("mind.json requires languageVersion");
+  const candidate=parse(await response.text(),{languageVersion:config?.languageVersion});
   const all=[candidate.player,...candidate.collectibles];
   if(all.some(e=>e.x<0||e.y<0||e.x>=cols||e.y>=rows))throw new Error("Entity outside 16×12 demo grid");
   program=candidate;
