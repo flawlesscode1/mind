@@ -37,3 +37,9 @@ No PR #2 authorization or release logic needs to be changed to host this playgro
 ## Scope deliberately kept small
 
 The page reuses the existing game controls and rendering. A source editor/Validate/Run interface is deferred so deployment does not wait for extra UI. Runtime initialization still performs the real parser validation before enabling play, and the raw/inline source lets reviewers inspect what executes. The public description distinguishes current movement/collection/win behavior from proposed physics and AI-driven language evolution.
+
+## Initial deployment evidence
+
+At commit `e970f0d`, [Actions run 43537481932](https://github.com/flawlesscode1/mind/actions/runs/43537481932) passed installation, all 16 automated tests, static compilation, real Chromium tests at `/` and `/mind/`, and Pages artifact upload on Ubuntu 24.04. The deploy job then failed during initial configuration: Pages returned `Not Found`, and creating the site returned `Resource not accessible by integration`.
+
+A repository administrator must select **Settings → Pages → Build and deployment → Source → GitHub Actions**. The connected GitHub App and the workflow token cannot make that initial administrative setting. Once enabled, rerun the failed deploy job (or push this branch), then run the public HTTPS smoke test. No public URL is asserted by this initial evidence.
