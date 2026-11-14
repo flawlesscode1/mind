@@ -10,7 +10,7 @@ const routes: Record<string, [string, string]> = {
   "/game.mind": ["examples/first_game.mind", "text/plain; charset=utf-8"],
   "/mind.js": ["dist/src/mind.js", "text/javascript; charset=utf-8"]
 };
-export function createGameServer() {
+export function createGameServer(gameFile = resolve(root, "examples/first_game.mind")) {
   return createServer(async (req, res) => {
     let pathname: string;
     try { pathname = new URL(req.url ?? "/", "http://localhost").pathname; }
@@ -18,12 +18,13 @@ export function createGameServer() {
     const route = Object.hasOwn(routes, pathname) ? routes[pathname] : undefined;
     if (!route) { res.writeHead(404); res.end("Not found"); return; }
     try {
-      const body = await readFile(resolve(root, route[0]));
+      const body = await readFile(pathname === "/game.mind" ? gameFile : resolve(root, route[0]));
       res.writeHead(200, { "Content-Type": route[1], "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
       res.end(body);
     } catch { res.writeHead(500); res.end("Unable to load game resource"); }
   });
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  createGameServer().listen(port, "127.0.0.1", () => console.log(`MIND browser runtime: http://127.0.0.1:${port}`));
+  const gameFile = process.argv[2] ? resolve(process.cwd(), process.argv[2]) : undefined;
+  createGameServer(gameFile).listen(port, "127.0.0.1", () => console.log(`MIND browser runtime: http://127.0.0.1:${port}`));
 }
