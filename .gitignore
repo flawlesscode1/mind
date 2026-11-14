@@ -153,3 +153,6 @@ _site/
 
 # Local untrusted extension intake and verification evidence
 extensions/proposals/
+
+# Private live-agent requests, generated artifacts and traces
+work/
