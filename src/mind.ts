@@ -1,7 +1,7 @@
 import { requireVersion } from "./release.js";
 
 export type Entity = { name: string; x: number; y: number };
-export type Program = { title: string; player: Entity; collectibles: Entity[]; target: number };
+export type Program = { title: string; player: Entity; collectibles: Entity[]; target: number; walls?: Entity[] };
 export type GameState = { player: Entity; remaining: Entity[]; collected: number; won: boolean };
 
 function safeInteger(value: number): number {
@@ -14,6 +14,14 @@ function checkCoordinates(entities: Entity[]): void {
 
 export function parse(source: string, options: { languageVersion?: string } = {}): Program {
   requireVersion(options.languageVersion);
+  return parseSyntax(source, false);
+}
+
+// Candidate verification only. Standard parse() never opts in from source text.
+export function parseSolidTilesCandidate(source: string): Program {
+  return parseSyntax(source, true);
+}
+function parseSyntax(source: string, allowWalls: boolean): Program {
   if (source.length > 65536) throw new Error("MIND source exceeds 65536 characters");
   const tokens = source.match(/"[^"\n]*"|==|-?\d+|[A-Za-z_][A-Za-z_0-9]*|[{};]/g) ?? [];
   const normalized = source.replace(/"[^"\n]*"|==|-?\d+|[A-Za-z_][A-Za-z_0-9]*|[{};]/g, "").trim();
@@ -30,10 +38,11 @@ export function parse(source: string, options: { languageVersion?: string } = {}
   let player: Entity | undefined;
   let target: number | undefined;
   const collectibles: Entity[] = [];
+  const walls: Entity[] = [];
   const names = new Set<string>();
   while (tokens[i] !== "}") {
     const kind = take();
-    if (kind === "player" || kind === "collectible") {
+    if (kind === "player" || kind === "collectible" || (allowWalls && kind === "wall")) {
       const name = ident();
       if (names.has(name)) throw new Error("Duplicate entity name: " + name);
       names.add(name);
@@ -43,7 +52,8 @@ export function parse(source: string, options: { languageVersion?: string } = {}
       if (kind === "player") {
         if (player) throw new Error("Only one player is supported");
         player = entity;
-      } else collectibles.push(entity);
+      } else if (kind === "wall") walls.push(entity);
+      else collectibles.push(entity);
     } else if (kind === "win") {
       if (target !== undefined) throw new Error("Duplicate win condition");
       expect("when"); expect("collected"); expect("==");
@@ -56,7 +66,8 @@ export function parse(source: string, options: { languageVersion?: string } = {}
   if (i !== tokens.length) throw new Error("Trailing tokens");
   if (!player || target === undefined) throw new Error("Player and win condition required");
   if (target > collectibles.length) throw new Error("Unreachable win target");
-  return { title: quoted.slice(1, -1), player, collectibles, target };
+  if (allowWalls && [player, ...collectibles].some(e => walls.some(w => w.x === e.x && w.y === e.y))) throw new Error("Player and collectibles cannot start on a wall");
+  return { title: quoted.slice(1, -1), player, collectibles, target, ...(allowWalls ? { walls } : {}) };
 }
 
 export function start(program: Program): GameState {

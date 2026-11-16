@@ -25,7 +25,7 @@ See `language/spec.md` for currently supported syntax, `examples/first_game.mind
 1. Expand the browser runtime with more game mechanics and robust validation.
 2. Expand MCP integration with automated compatibility tests and agent configuration examples.
 3. Versioned extension proposals, validation, and protected releases.
-4. Firebase AI Logic hybrid-inference integration for the hackathon.
+4. Improve the controlled, inspectable language-evolution game demonstration.
 
 ## MCP (experimental)
 
@@ -45,3 +45,8 @@ The browser workshop prepares a request for an external coding agent, accepts it
 See [the program workflow guide](docs/program-workflow.md) for the audit, exact reproduction steps, handoff format, security boundaries and limitations. Start with `npm run play -- examples/yc_collect.mind`; the original Three Stars program remains available.
 
 An opt-in **local Codex CLI adapter** now writes privately stored, independently validated handoffs for the same workshop. It does not put credentials in the static site or execute/approve generated programs. See [PR #5 review and live-agent status](docs/pr5-review-live-agent.md): the current managed-host attempt is blocked by read-only Codex runtime storage, so live generation has not been demonstrated here.
+
+
+## Executable extension candidates
+
+The first fixed experimental candidate adds destination-blocking solid tiles. It is **not released or active** in MIND v0.1. Existing proposal verification now tests its real semantics; a local candidate trial requires signed maintainer approval of the exact verified build. See [the solid-tile milestone](docs/solid-tiles-milestone.md) and [engineering learning log](docs/learning-log/2026-11-16-solid-tiles.md). No feature is automatically approved, installed or published.
