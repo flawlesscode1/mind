@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "mind-program",
+  "request": "Change Three Stars to Two Stars Together: Hero at (1,2), collectibles at (3,2) and (5,2); win after both.",
+  "source": "game \"Two Stars Together\" {\n  player Hero at 1 2;\n  collectible First at 3 2;\n  collectible Second at 5 2;\n  win when collected == 2;\n}\n",
+  "languageVersion": "0.1.0",
+  "requestedCapabilities": [
+    "player",
+    "collectible",
+    "movement",
+    "win"
+  ],
+  "provenance": {
+    "kind": "external-agent",
+    "agent": "Codex coding assistant (prepared during this development session)"
+  }
+}

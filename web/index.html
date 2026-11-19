@@ -7,15 +7,36 @@
 :root{color-scheme:dark;font-family:system-ui,sans-serif}body{background:#101522;color:#f4f7ff;margin:0;display:grid;place-items:center;min-height:100vh}
 main{width:min(94vw,650px)}h1{margin-bottom:4px}p{color:#b5bfd2}canvas{display:block;width:100%;background:#19243b;border:1px solid #4c6489;border-radius:12px;image-rendering:pixelated}
 #status{font-weight:700;color:#92e8d2;min-height:1.5em}kbd{border:1px solid #63758d;padding:2px 6px;border-radius:4px}
-pre{overflow:auto;background:#19243b;padding:16px;border-radius:8px}a{color:#92c5ff}button{background:#496cda;color:white;border:0;padding:10px 16px;border-radius:8px;cursor:pointer}
+textarea,input{box-sizing:border-box;width:100%;background:#19243b;color:#f4f7ff;border:1px solid #63758d;border-radius:6px;padding:8px}textarea{font-family:monospace}label{display:block;margin-top:12px}button{margin:6px 4px 6px 0}#review-status,#execution-status{white-space:pre-wrap}pre{overflow:auto;background:#19243b;padding:16px;border-radius:8px}a{color:#92c5ff}button{background:#496cda;color:white;border:0;padding:10px 16px;border-radius:8px;cursor:pointer}
 </style>
 </head>
 <body><main>
 <h1 id="title">MIND runtime</h1><p>Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys. Collect the yellow stars.</p>
 <canvas id="game" width="640" height="480" aria-label="Game board"></canvas>
 <p id="status" role="status">Loading .mind program…</p><button id="restart" type="button" disabled>Restart</button>
-<p><a href="./game.mind" target="_blank" rel="noopener">View the running .mind source</a></p>
+<p><a id="running-source-link" href="./game.mind" target="_blank" rel="noopener">View the running .mind source</a></p>
 <details><summary>Inspect the actual .mind program</summary><pre id="source-code">Loading source…</pre></details>
+<section aria-label="Program workshop">
+<h2>Inspect and run a program change</h2>
+<p>Describe a change, give the prepared prompt to your external coding agent, and bring its result back here. This page does not call an AI model. You can also paste source manually.</p>
+<fieldset id="workshop-fields" disabled>
+<label for="request">Your request</label><textarea id="request" rows="2" maxlength="4096">Change Three Stars to Two Stars Together: Hero at (1,2), collectibles at (3,2) and (5,2); win after both.</textarea>
+<button id="prepare-prompt" type="button">Prepare prompt for external agent</button>
+<label for="agent-prompt">Prompt to copy into your coding agent</label><textarea id="agent-prompt" rows="4" readonly></textarea>
+<label for="handoff">Paste the agent’s JSON handoff</label><textarea id="handoff" rows="3" maxlength="150000"></textarea>
+<button id="import-handoff" type="button">Import handoff for inspection</button>
+<button id="load-sample" type="button">Load prepared Codex example (not live generation)</button>
+<p id="provenance">Manual / pasted input. No model invoked by this page.</p>
+<label for="draft-source">Candidate .mind source</label><textarea id="draft-source" rows="8" maxlength="65536" spellcheck="false"></textarea>
+<label for="draft-version">Pinned language version</label><input id="draft-version" maxlength="64" value="0.1.0">
+<label for="draft-capabilities">Capabilities required by the request (comma separated)</label><input id="draft-capabilities" maxlength="1024" value="player,collectible,movement,win">
+<button id="inspect-program" type="button">Inspect and validate</button>
+<button id="approve-program" type="button" disabled>Approve this source and run</button>
+<p id="review-status" role="status">No candidate inspected yet.</p>
+<pre id="program-review" aria-label="Program inspection"></pre>
+<p id="execution-status" role="status">The bundled game is running above. Candidate changes do not run until you approve them.</p>
+</fieldset>
+</section>
 <section aria-label="About MIND">
 <h2>A language for humans and AI agents</h2>
 <p>MIND is an experimental programming language designed for humans and AI coding agents to build software together. Today this prototype parses real <code>.mind</code> files and executes small games in your browser.</p>
@@ -31,7 +52,7 @@ const ctx = canvas.getContext("2d");
 const status = document.querySelector("#status");
 const title = document.querySelector("#title");
 const cell = 40, cols = canvas.width / cell, rows = canvas.height / cell;
-let program, state;
+let program, state, sourceObjectUrl;
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.strokeStyle="#293754";
@@ -41,11 +62,14 @@ function draw(){
     ctx.fillStyle="#ffd45b";ctx.beginPath();ctx.arc((e.x+.5)*cell,(e.y+.5)*cell,13,0,Math.PI*2);ctx.fill();
   }
   ctx.fillStyle="#6fe6d0";ctx.fillRect(state.player.x*cell+6,state.player.y*cell+6,cell-12,cell-12);
+  const executionStatus=document.querySelector("#execution-status");
+  if(executionStatus)executionStatus.textContent="Interpreter state: "+JSON.stringify({title:program.title,...state});
   status.textContent=state.won?`YOU WON! Collected ${state.collected}/${program.target}`:`Collected ${state.collected}/${program.target}`;
 }
 function reset(){state=start(program);draw()}
 document.querySelector("#restart").addEventListener("click",()=>{if(program)reset()});
 window.addEventListener("keydown",event=>{
+  if(["TEXTAREA","INPUT"].includes(event.target?.tagName))return;
   if(!program || !state || event.altKey || event.ctrlKey || event.metaKey)return;
   const dirs={ArrowUp:[0,-1],w:[0,-1],ArrowDown:[0,1],s:[0,1],ArrowLeft:[-1,0],a:[-1,0],ArrowRight:[1,0],d:[1,0]};
   const dir=dirs[event.key];if(!dir)return;event.preventDefault();
@@ -53,16 +77,35 @@ window.addEventListener("keydown",event=>{
   if(x<0||y<0||x>=cols||y>=rows)return;
   state=move(program,state,...dir);draw();
 });
+window.addEventListener("mind:run-reviewed",event=>{
+  try{
+    const {source,languageVersion}=event.detail;
+    const candidate=parse(source,{languageVersion});
+    if([candidate.player,...candidate.collectibles].some(e=>e.x<0||e.y<0||e.x>=cols||e.y>=rows))throw new Error("Entity outside 16×12 demo grid");
+    program=candidate;title.textContent=program.title+" — MIND";
+    const sourceLink=document.querySelector("#running-source-link");
+    if(sourceLink){
+      if(sourceObjectUrl)URL.revokeObjectURL(sourceObjectUrl);
+      sourceObjectUrl=URL.createObjectURL(new Blob([source],{type:"text/plain"}));
+      sourceLink.href=sourceObjectUrl;
+    }
+    const sourceView=document.querySelector("#source-code");if(sourceView)sourceView.textContent=source;
+    reset();document.querySelector("#restart").disabled=false;
+    window.dispatchEvent(new CustomEvent("mind:execution-result",{detail:{ok:true,source,languageVersion,state}}));
+  }catch(error){window.dispatchEvent(new CustomEvent("mind:execution-result",{detail:{ok:false,error:error.message}}))}
+});
 try{
   const response=await fetch("./game.mind");
   if(!response.ok)throw new Error("Unable to load .mind source");
   const source=await response.text();
   const sourceView=document.querySelector("#source-code");
   if(sourceView)sourceView.textContent=source;
+  canvas.dataset.sourceLoaded="true";
   const configResponse=await fetch("./mind.json");
   if(!configResponse.ok && configResponse.status!==404)throw new Error("Unable to load mind.json");
   const config=configResponse.ok?await configResponse.json():undefined;
   if(configResponse.ok && (!config || typeof config.languageVersion!=="string"))throw new Error("mind.json requires languageVersion");
+  canvas.dataset.initialVersion=config?.languageVersion??"";
   const candidate=parse(source,{languageVersion:config?.languageVersion});
   const all=[candidate.player,...candidate.collectibles];
   if(all.some(e=>e.x<0||e.y<0||e.x>=cols||e.y>=rows))throw new Error("Entity outside 16×12 demo grid");
@@ -70,6 +113,9 @@ try{
   title.textContent=program.title+" — MIND";
   reset();
   document.querySelector("#restart").disabled=false;
+  canvas.dataset.initialSucceeded="true";
 }catch(error){program=undefined;state=undefined;document.querySelector("#restart").disabled=true;status.textContent="Error: "+error.message;console.error(error)}
+finally{canvas.dataset.runtimeReady="true";window.dispatchEvent(new Event("mind:runtime-ready"))}
 </script>
+<script type="module" src="./workflow-ui.js"></script>
 </body></html>

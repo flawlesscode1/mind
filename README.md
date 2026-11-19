@@ -29,10 +29,35 @@ See `language/spec.md` for currently supported syntax, `examples/first_game.mind
 
 ## MCP (experimental)
 
-Run `npm run mcp` to start the local stdio MCP server. Configure your MCP-compatible coding agent to launch `node` with `dist/src/mcp.js` as its argument and set the working directory to the repository root (run `npm run build` first). Available tools: `mind_get_version`, `mind_list_capabilities`, `mind_get_spec`, `mind_check_capability`, `mind_validate`, `mind_propose_extension`, `mind_get_proposal_status`. The version and capability tools describe the active language release, not pending proposals. Intake requires a base language version and capability IDs; status includes candidate identity and persisted verification evidence. No approval/publication tools are exposed, and no AI model is invoked.
+Run `npm run mcp` to start the local stdio MCP server. Configure your MCP-compatible coding agent to launch `node` with `dist/src/mcp.js` as its argument and set the working directory to the repository root (run `npm run build` first). Available tools: `mind_inspect_program`, `mind_preview_program`, `mind_get_version`, `mind_list_capabilities`, `mind_get_spec`, `mind_check_capability`, `mind_validate`, `mind_propose_extension`, `mind_get_proposal_status`. The version and capability tools describe the active language release, not pending proposals. Intake requires a base language version and capability IDs; status includes candidate identity and persisted verification evidence. No approval/publication tools are exposed, and no AI model is invoked.
 
 ## Versioned extension workflow
 
 Optionally pin a project with `mind.json` (`{"languageVersion":"0.1.0"}`). Legacy source remains valid. See [the extension workflow](extensions/README.md) for local candidate registration, automated compatibility checks, maintainer authorization, limits, and the intentionally failing gravity/jumping example.
 
 `npm test` runs regression and data-driven conformance tests. CI repeats the suite on Node 20, 22, and 24 using the dependency lockfile. The browser demo still uses a 16×12 grid; MCP language validation does not enforce browser-only bounds.
+
+
+## Inspectable program workflow (experimental)
+
+The browser workshop prepares a request for an external coding agent, accepts its real MIND source/handoff, shows validation and source changes, and requires explicit approval before replacing the running game. A labeled manual input path and a prepared Codex-authored example are included; the webpage does not invoke a model. MCP inspection and deterministic interpreter-preview tools support external agents without approving language extensions.
+
+See [the program workflow guide](docs/program-workflow.md) for the audit, exact reproduction steps, handoff format, security boundaries and limitations. Start with `npm run play -- examples/yc_collect.mind`; the original Three Stars program remains available.
+
+An opt-in **local Codex CLI adapter** now writes privately stored, independently validated handoffs for the same workshop. It does not put credentials in the static site or execute/approve generated programs. See [PR #5 review and live-agent status](docs/pr5-review-live-agent.md): the current managed-host attempt is blocked by read-only Codex runtime storage, so live generation has not been demonstrated here.
+
+## Clone and run on a Mac
+
+Use Git and Node.js 20, 22 or 24 (Node 24 recommended). No model account is required for the language, examples, browser workshop or test suite.
+
+```sh
+git clone https://github.com/flawlesscode1/mind.git
+cd mind
+npm ci
+npm test
+npm run play -- examples/yc_collect.mind
+```
+
+Open http://127.0.0.1:3000. The build clears generated `dist/` before compilation, so switching branches does not retain removed modules or tests. `npm run build:pages` creates the static artifact. For optional browser tests, run `npx playwright install chromium` then `npm run test:pages`.
+
+The working language remains v0.1. External model generation is optional and provider-dependent; it is not required for this clone/run path. Experimental extension code is not an approved language release. Use the documented signed review workflow before any candidate trial or publication.
