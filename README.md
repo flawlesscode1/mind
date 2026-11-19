@@ -50,3 +50,19 @@ An opt-in **local Codex CLI adapter** now writes privately stored, independently
 ## Executable extension candidates
 
 The first fixed experimental candidate adds destination-blocking solid tiles. It is **not released or active** in MIND v0.1. Existing proposal verification now tests its real semantics; a local candidate trial requires signed maintainer approval of the exact verified build. See [the solid-tile milestone](docs/solid-tiles-milestone.md) and [engineering learning log](docs/learning-log/2026-11-16-solid-tiles.md). No feature is automatically approved, installed or published.
+
+## Clone and run on a Mac
+
+Use Git and Node.js 20, 22 or 24 (Node 24 recommended). No model account is required for the language, examples, browser workshop or test suite.
+
+```sh
+git clone https://github.com/flawlesscode1/mind.git
+cd mind
+npm ci
+npm test
+npm run play -- examples/yc_collect.mind
+```
+
+Open http://127.0.0.1:3000. The build clears generated `dist/` before compilation, so switching branches does not retain removed modules or tests. `npm run build:pages` creates the static artifact. For optional browser tests, run `npx playwright install chromium` then `npm run test:pages`.
+
+The working language remains v0.1. External model generation is optional and provider-dependent; it is not required for this clone/run path. Experimental extension code is not an approved language release. Use the documented signed review workflow before any candidate trial or publication.
