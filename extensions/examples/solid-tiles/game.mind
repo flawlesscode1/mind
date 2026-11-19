@@ -1,0 +1,6 @@
+game "Around the Wall" {
+  player Hero at 1 1;
+  wall Stone at 2 1;
+  collectible Star at 3 1;
+  win when collected == 1;
+}

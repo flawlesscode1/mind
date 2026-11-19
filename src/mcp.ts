@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { solidTiles } from "./extension-candidates.js";
 import { inspectProgram, previewProgram } from "./program-workflow.js";
 import { parse } from "./mind.js";
 import { checkCapability } from "./capabilities.js";
@@ -15,6 +16,7 @@ const field = { type: "string", minLength: 1, maxLength: limits.fieldBytes };
 const programFields = { source: { type: "string", maxLength: 65536 }, beforeSource: { type: "string", maxLength: 65536 }, languageVersion: field, requestedCapabilities: { type: "array", maxItems: 16, items: { type: "string", pattern: "^[a-z0-9-]{1,64}$" } } };
 const proposalFields = ["baseLanguageVersion", "title", "motivation", "syntax", "semantics", "tests", "compatibility", "capabilities"];
 const tools = [
+  { name: "mind_get_extension_catalog", description: "Inspect installed experimental extension implementations; not released or active. No approval, activation or code execution.", inputSchema: schema({}) },
   { name: "mind_inspect_program", description: "Inspect generated source, line changes, validation, browser bounds and declared capability requirements. Does not approve or apply it.", inputSchema: schema(programFields, ["source"]) },
   { name: "mind_preview_program", description: "Read-only deterministic interpreter execution of at most 32 move actions. Returns actual states/errors; does not apply a browser change or record human approval.", inputSchema: schema({ ...programFields, actions: { type: "array", maxItems: 32, items: { type: "object", properties: { type: { const: "move" }, dx: { type: "integer" }, dy: { type: "integer" } }, required: ["type", "dx", "dy"], additionalProperties: false } } }, ["source"]) },
   { name: "mind_get_version", description: "Discover the active release manifest, supported versions and capability metadata", inputSchema: schema({}) },
@@ -46,6 +48,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
         const input = { source: str("source"), beforeSource: args.beforeSource === undefined ? undefined : str("beforeSource"), languageVersion: args.languageVersion === undefined ? undefined : str("languageVersion"), requestedCapabilities: args.requestedCapabilities as string[] | undefined };
         result = request.params.name === "mind_inspect_program" ? inspectProgram(input) : previewProgram(input, args.actions); break;
       }
+      case "mind_get_extension_catalog": result = { activeLanguageVersion: release.languageVersion, candidates: [solidTiles] }; break;
       case "mind_get_version": result = release; break;
       case "mind_list_capabilities": result = { languageVersion: release.languageVersion, capabilities: release.capabilities }; break;
       case "mind_get_spec": result = await readFile(fileURLToPath(new URL("../../language/spec.md", import.meta.url)), "utf8"); break;

@@ -26,23 +26,25 @@ export function fixtures(value: unknown): Fixture[] {
   }
   return value;
 }
-export function runFixtures(input: Fixture[]) {
+export type Engine = { parse: typeof parse; start: typeof start; move: typeof move };
+const releasedEngine: Engine = { parse, start, move };
+export function runFixtures(input: Fixture[], engine: Engine = releasedEngine) {
   return fixtures(input).map(f => {
     try {
       if ("error" in f.expect) {
-        try { parse(f.source, { languageVersion: f.languageVersion }); }
+        try { engine.parse(f.source, { languageVersion: f.languageVersion }); }
         catch (e) {
           if (String(e).includes(f.expect.error)) return { id: f.id, passed: true };
           throw e;
         }
         throw new Error("Expected parsing to fail");
       }
-      const program = parse(f.source, { languageVersion: f.languageVersion });
-      let state = start(program);
+      const program = engine.parse(f.source, { languageVersion: f.languageVersion });
+      let state = engine.start(program);
       const states = [state];
       for (const action of f.actions ?? []) {
         if (action.type !== "move") throw new Error("Unsupported action: " + action.type);
-        state = move(program, state, action.dx!, action.dy!); states.push(state);
+        state = engine.move(program, state, action.dx!, action.dy!); states.push(state);
       }
       if (!isDeepStrictEqual(states, f.expect.states)) throw new Error("Execution states differ from acceptance expectations");
       return { id: f.id, passed: true };

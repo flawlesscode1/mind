@@ -1,0 +1,213 @@
+[
+  {
+    "id": "solid-block-and-detour",
+    "source": "game \"Around the Wall\" {\n  player Hero at 1 1;\n  wall Stone at 2 1;\n  collectible Star at 3 1;\n  win when collected == 1;\n}\n",
+    "languageVersion": "0.2.0",
+    "capabilities": [
+      "solid-tiles"
+    ],
+    "actions": [
+      {
+        "type": "move",
+        "dx": 1,
+        "dy": 0
+      },
+      {
+        "type": "move",
+        "dx": 0,
+        "dy": 1
+      },
+      {
+        "type": "move",
+        "dx": 1,
+        "dy": 0
+      },
+      {
+        "type": "move",
+        "dx": 1,
+        "dy": 0
+      },
+      {
+        "type": "move",
+        "dx": 0,
+        "dy": -1
+      }
+    ],
+    "expect": {
+      "states": [
+        {
+          "player": {
+            "name": "Hero",
+            "x": 1,
+            "y": 1
+          },
+          "remaining": [
+            {
+              "name": "Star",
+              "x": 3,
+              "y": 1
+            }
+          ],
+          "collected": 0,
+          "won": false
+        },
+        {
+          "player": {
+            "name": "Hero",
+            "x": 1,
+            "y": 1
+          },
+          "remaining": [
+            {
+              "name": "Star",
+              "x": 3,
+              "y": 1
+            }
+          ],
+          "collected": 0,
+          "won": false
+        },
+        {
+          "player": {
+            "name": "Hero",
+            "x": 1,
+            "y": 2
+          },
+          "remaining": [
+            {
+              "name": "Star",
+              "x": 3,
+              "y": 1
+            }
+          ],
+          "collected": 0,
+          "won": false
+        },
+        {
+          "player": {
+            "name": "Hero",
+            "x": 2,
+            "y": 2
+          },
+          "remaining": [
+            {
+              "name": "Star",
+              "x": 3,
+              "y": 1
+            }
+          ],
+          "collected": 0,
+          "won": false
+        },
+        {
+          "player": {
+            "name": "Hero",
+            "x": 3,
+            "y": 2
+          },
+          "remaining": [
+            {
+              "name": "Star",
+              "x": 3,
+              "y": 1
+            }
+          ],
+          "collected": 0,
+          "won": false
+        },
+        {
+          "player": {
+            "name": "Hero",
+            "x": 3,
+            "y": 1
+          },
+          "remaining": [],
+          "collected": 1,
+          "won": true
+        }
+      ]
+    }
+  },
+  {
+    "id": "destination-only-large-delta",
+    "source": "game \"Around the Wall\" {\n  player Hero at 1 1;\n  wall Stone at 2 1;\n  collectible Star at 3 1;\n  win when collected == 1;\n}\n",
+    "languageVersion": "0.2.0",
+    "actions": [
+      {
+        "type": "move",
+        "dx": 2,
+        "dy": 0
+      }
+    ],
+    "expect": {
+      "states": [
+        {
+          "player": {
+            "name": "Hero",
+            "x": 1,
+            "y": 1
+          },
+          "remaining": [
+            {
+              "name": "Star",
+              "x": 3,
+              "y": 1
+            }
+          ],
+          "collected": 0,
+          "won": false
+        },
+        {
+          "player": {
+            "name": "Hero",
+            "x": 3,
+            "y": 1
+          },
+          "remaining": [],
+          "collected": 1,
+          "won": true
+        }
+      ]
+    }
+  },
+  {
+    "id": "player-on-wall",
+    "source": "game \"Around the Wall\" {\n  player Hero at 1 1;\n  wall Stone at 1 1;\n  collectible Star at 3 1;\n  win when collected == 1;\n}\n",
+    "languageVersion": "0.2.0",
+    "expect": {
+      "error": "cannot start on a wall"
+    }
+  },
+  {
+    "id": "collectible-on-wall",
+    "source": "game \"Around the Wall\" {\n  player Hero at 1 1;\n  wall Stone at 3 1;\n  collectible Star at 3 1;\n  win when collected == 1;\n}\n",
+    "languageVersion": "0.2.0",
+    "expect": {
+      "error": "cannot start on a wall"
+    }
+  },
+  {
+    "id": "duplicate-wall-id",
+    "source": "game \"Around the Wall\" {\n  player Hero at 1 1;\n  wall Hero at 2 1;\n  collectible Star at 3 1;\n  win when collected == 1;\n}\n",
+    "languageVersion": "0.2.0",
+    "expect": {
+      "error": "Duplicate entity name"
+    }
+  },
+  {
+    "id": "unsafe-wall-coordinate",
+    "source": "game \"Around the Wall\" {\n  player Hero at 1 1;\n  wall Stone at 9007199254740993 1;\n  collectible Star at 3 1;\n  win when collected == 1;\n}\n",
+    "languageVersion": "0.2.0",
+    "expect": {
+      "error": "safe integer"
+    }
+  },
+  {
+    "id": "unknown-candidate-mechanic",
+    "source": "game \"Around the Wall\" {\n  player Hero at 1 1;\n  gravity Stone at 2 1;\n  collectible Star at 3 1;\n  win when collected == 1;\n}\n",
+    "languageVersion": "0.2.0",
+    "expect": {
+      "error": "Unsupported statement"
+    }
+  }
+]

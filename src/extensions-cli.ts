@@ -17,6 +17,12 @@ try {
       if (p.status !== "verified") process.exitCode = 1;
       break;
     }
+    case "trial": {
+      const policy = await json("extensions/maintainers.json", 16384);
+      if (policy.schemaVersion !== 1 || !policy.keys || typeof policy.keys !== "object") throw new Error("Invalid maintainer policy");
+      const source = await readLimited(args[0], 65536);
+      result = await store.trial(proposalId, source, await json(args[1], 16384), policy.keys); break;
+    }
     case "reject": result = await store.reject(proposalId, args.join(" ")); break;
     case "approval-payload": case "publication-payload":
       result = authorizationPayload(await store.get(proposalId), command === "approval-payload" ? "approve" : "publish"); break;
@@ -25,7 +31,7 @@ try {
       if (policy.schemaVersion !== 1 || !policy.keys || typeof policy.keys !== "object") throw new Error("Invalid maintainer policy");
       result = await store.authorize(proposalId, command, await json(args[0], 16384), policy.keys); break;
     }
-    default: throw new Error("Usage: extension submit <proposal.json> | status <id> | candidate <id> <full-sha> <target-version> <fixtures.json> | verify <id> | reject <id> <reason> | approval-payload/publication-payload <id> | approve/publish <id> <signature.json>");
+    default: throw new Error("Usage: extension submit <proposal.json> | status <id> | candidate <id> <full-sha> <target-version> <fixtures.json> | verify <id> | trial <id> <file.mind> <actions.json> | reject <id> <reason> | approval-payload/publication-payload <id> | approve/publish <id> <signature.json>");
   }
   console.log(typeof result === "string" ? result : JSON.stringify(result, null, 2));
 } catch (error) { console.error(error instanceof Error ? error.message : String(error)); process.exitCode = 1; }

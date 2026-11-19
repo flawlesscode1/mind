@@ -4,6 +4,7 @@ import { mkdir, open, readdir, lstat, rename, unlink } from "node:fs/promises";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
+import { candidateProfile, hasSolidTileCoverage, executeCandidate } from "./extension-candidates.js";
 import { sourceDigest, compiledDigest } from "./provenance.js";
 import { release, requireVersion } from "./release.js";
 import { checkCapability } from "./capabilities.js";
@@ -28,6 +29,7 @@ export type Proposal = ProposalInput & {
   candidate?: Candidate; verification?: Evidence;
   approval?: Authorization; publication?: Authorization;
   previousCandidates?: { candidate: Candidate; verification?: Evidence }[];
+  trials?: { id: string; source: string; sourceHash: string; candidateId: string; verificationId: string; sourceRevision: string; createdAt: string; execution: ReturnType<typeof executeCandidate> }[];
   history: { status: Status; at: string; detail: string }[];
 };
 export const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -147,15 +149,20 @@ export class ProposalStore {
         check("source-revision", revision === candidate.sourceRevision && !dirty, "Verify from a clean checkout of the exact candidate revision; rebuild with npm run build");
         const build = JSON.parse(await readLimited(resolve(this.repository, "dist/build-info.json"), 4096));
         check("build-provenance", build.sourceRevision === revision && build.sourceDigest === sourceDigest(this.repository) && build.compiledDigest === compiledDigest(), "Stale build; run npm run build in the candidate checkout");
-        requireVersion(candidate.targetLanguageVersion);
+        const profile = candidateProfile(candidate.targetLanguageVersion);
+        if (!profile) requireVersion(candidate.targetLanguageVersion);
+        else {
+          if (p.baseLanguageVersion !== profile.metadata.baseLanguageVersion) throw new Error("Candidate base language version mismatch");
+          check("profile/" + profile.metadata.id, profile.metadata.capabilities.every(c => p.capabilities.includes(c)), "Proposal must explicitly request every capability implemented by this candidate profile");
+        }
         const baseline = fixtures(JSON.parse(await readLimited(resolve(this.repository, "conformance/v0.1.json"), 131072)));
         baselineHash = digest(baseline);
         check("baseline-integrity", baselineHash === release.compatibility.conformance.sha256, "Baseline does not match the release manifest");
         results.push(...runFixtures(baseline).map(r => ({ ...r, id: "baseline/" + r.id })));
-        results.push(...runFixtures(candidate.fixtures).map(r => ({ ...r, id: "candidate/" + r.id })));
+        results.push(...runFixtures(candidate.fixtures, profile?.engine).map(r => ({ ...r, id: "candidate/" + r.id })));
         for (const capability of p.capabilities) {
-          check("capability/" + capability, checkCapability(capability).supported === true, "Capability has no implemented release semantics");
-          check("coverage/" + capability, candidate.fixtures.some(f => f.capabilities?.includes(capability) && "states" in f.expect && (f.actions?.length ?? 0) > 0), "Capability requires a positive execution fixture with actions");
+          check("capability/" + capability, (profile?.metadata.capabilities as readonly string[] | undefined)?.includes(capability) || checkCapability(capability).supported === true, "Capability has no implemented release semantics");
+          check("coverage/" + capability, candidate.fixtures.some(f => capability === "solid-tiles" && profile ? hasSolidTileCoverage(f) : f.capabilities?.includes(capability) && "states" in f.expect && (f.actions?.length ?? 0) > 0), "Capability requires a positive execution fixture with actions");
         }
       } catch (error) { check("verification-error", false, String(error).slice(0, 1000)); }
       const evidence = { candidateId: candidate.id, sourceRevision: candidate.sourceRevision, fixtureHash: candidate.fixtureHash, baselineHash, nodeVersion: process.version, createdAt: new Date().toISOString(), passed: results.length > 0 && results.every(r => r.passed), results };
@@ -184,6 +191,24 @@ export class ProposalStore {
       if (!this.validAuthorization(p, action, authorization, trustedKeys)) throw new Error("Authorized maintainer signature required");
       if (action === "approve") p.approval = authorization; else p.publication = authorization;
       transition(p, action === "approve" ? "approved" : "published", authorization.keyId); await this.save(p); return p;
+    });
+  }
+  async trial(proposalId: string, source: string, actions: unknown, trustedKeys: Record<string, string>) {
+    return this.locked(async () => {
+      const p = await this.get(proposalId);
+      if (p.status !== "approved" || !p.approval || !this.validAuthorization(p, "approve", p.approval, trustedKeys)) throw new Error("Trial requires an authorized maintainer's approval of the verified candidate");
+      const evidence = this.verified(p);
+      const revision = (await exec("git", ["rev-parse", "HEAD"], { cwd: this.repository })).stdout.trim();
+      const dirty = (await exec("git", ["status", "--porcelain", "--untracked-files=normal"], { cwd: this.repository })).stdout.trim();
+      const build = JSON.parse(await readLimited(resolve(this.repository, "dist/build-info.json"), 4096));
+      if (dirty || revision !== p.candidate!.sourceRevision || build.sourceRevision !== revision || build.sourceDigest !== sourceDigest(this.repository) || build.compiledDigest !== compiledDigest()) throw new Error("Trial requires the exact clean verified checkout and fresh build");
+      if ((p.trials?.length ?? 0) >= 8) throw new Error("Candidate trial count limit reached");
+      const execution = executeCandidate(p.candidate!.targetLanguageVersion, source, actions);
+      const body = { source, sourceHash: digest(source), candidateId: p.candidate!.id, verificationId: evidence.id, sourceRevision: revision, createdAt: new Date().toISOString(), execution };
+      const trial = { id: digest(body), ...body };
+      (p.trials ??= []).push(trial);
+      await this.save(p);
+      return trial;
     });
   }
   private validAuthorization(p: Proposal, action: "approve" | "publish", authorization: Authorization, keys: Record<string, string>) {

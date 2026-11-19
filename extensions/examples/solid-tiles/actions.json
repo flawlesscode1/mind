@@ -1,0 +1,7 @@
+[
+  { "type": "move", "dx": 1, "dy": 0 },
+  { "type": "move", "dx": 0, "dy": 1 },
+  { "type": "move", "dx": 1, "dy": 0 },
+  { "type": "move", "dx": 1, "dy": 0 },
+  { "type": "move", "dx": 0, "dy": -1 }
+]

@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { ProposalStore, limits, authorizationPayload } from "../src/proposals.js";
+import { executeCandidate } from "../src/extension-candidates.js";
 import { compiledDigest, sourceDigest } from "../src/provenance.js";
 
 const input = JSON.parse(await readFile("extensions/examples/gravity-jumping.json", "utf8"));
@@ -108,5 +109,58 @@ test("wrong revisions, dirty trees, stale builds, and missing positive coverage 
     await writeFile(buildPath, build);
     await store.candidate(p.id, revision, "0.1.0", baseline.filter((f: { expect: { error?: string } }) => f.expect.error));
     const negative = await store.verify(p.id); assert.equal(negative.status, "failed"); assert.ok(negative.verification!.results.some(r => r.id === "coverage/movement" && !r.passed));
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("new solid-tile semantics verify, await exact signed approval, and persist an approved trial", async () => {
+  // Ephemeral keys exercise authorization; they are not the founder's approval.
+  const solidInput = JSON.parse(await readFile("extensions/examples/solid-tiles/proposal.json", "utf8"));
+  const solidFixtures = JSON.parse(await readFile("extensions/examples/solid-tiles/acceptance.json", "utf8"));
+  const source = await readFile("extensions/examples/solid-tiles/game.mind", "utf8");
+  const actions = JSON.parse(await readFile("extensions/examples/solid-tiles/actions.json", "utf8"));
+  const { root, store, revision } = await repository();
+  try {
+    const p = await store.submit(solidInput);
+    await store.candidate(p.id, revision, "0.2.0", solidFixtures);
+    const verified = await store.verify(p.id);
+    assert.equal(verified.status, "verified", JSON.stringify(verified.verification));
+    assert.ok(verified.verification!.results.some(r => r.id === "coverage/solid-tiles" && r.passed));
+    await assert.rejects(store.trial(p.id, source, actions, {}), /requires.*approval/);
+    const { publicKey, privateKey } = generateKeyPairSync("ed25519");
+    const keys = { tester: publicKey.export({ type: "spki", format: "pem" }).toString() };
+    const approval = { keyId: "tester", signature: sign(null, Buffer.from(authorizationPayload(verified, "approve")), privateKey).toString("base64") };
+    await store.authorize(p.id, "approve", approval, keys);
+    await assert.rejects(store.trial(p.id, source, actions, {}), /requires.*approval/);
+    await writeFile(resolve(root, "dirty"), "not the verified tree");
+    await assert.rejects(store.trial(p.id, source, actions, keys), /exact clean/); await rm(resolve(root, "dirty"));
+    const buildPath = resolve(root, "dist/build-info.json"); const build = await readFile(buildPath, "utf8");
+    await writeFile(buildPath, "{}"); await assert.rejects(store.trial(p.id, source, actions, keys), /fresh build/); await writeFile(buildPath, build);
+    const trial = await store.trial(p.id, source, actions, keys);
+    assert.equal(trial.candidateId, verified.candidate!.id); assert.equal(trial.verificationId, verified.verification!.id);
+    assert.deepEqual(trial.execution.actions, actions);
+    assert.deepEqual(executeCandidate(trial.execution.languageVersion, trial.source, trial.execution.actions).trace, trial.execution.trace);
+    assert.equal(trial.execution.released, false); assert.equal(trial.execution.trace.at(-1)!.won, true);
+    assert.deepEqual(trial.execution.trace[0], trial.execution.trace[1]);
+    const stored = await store.get(p.id);
+    assert.deepEqual(stored.trials![0], trial); assert.equal(stored.status, "approved");
+    const publication = { keyId: "tester", signature: sign(null, Buffer.from(authorizationPayload(verified, "publish")), privateKey).toString("base64") };
+    await assert.rejects(store.authorize(p.id, "publish", publication, keys), /matching committed release manifest/);
+    await assert.rejects(store.trial(p.id, source, [{ type: "exec", code: "untrusted" }], keys), /data-only/);
+    assert.equal((await store.get(p.id)).trials!.length, 1);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+test("candidate verification cannot hide a new capability or relabel unrelated movement as coverage", async () => {
+  const solidInput = JSON.parse(await readFile("extensions/examples/solid-tiles/proposal.json", "utf8"));
+  const solidFixtures = JSON.parse(await readFile("extensions/examples/solid-tiles/acceptance.json", "utf8"));
+  const { root, store, revision } = await repository();
+  try {
+    const disguised = await store.submit({ ...solidInput, capabilities: ["movement"] });
+    await store.candidate(disguised.id, revision, "0.2.0", solidFixtures);
+    const missing = await store.verify(disguised.id); assert.equal(missing.status, "failed");
+    assert.ok(missing.verification!.results.some(r => r.id === "profile/solid-tiles-v1" && !r.passed));
+    const p = await store.submit(solidInput);
+    await store.candidate(p.id, revision, "0.2.0", [{ ...solidFixtures[1], capabilities: ["solid-tiles"] }]);
+    const noBlock = await store.verify(p.id); assert.equal(noBlock.status, "failed");
+    assert.ok(noBlock.verification!.results.some(r => r.id === "coverage/solid-tiles" && !r.passed));
   } finally { await rm(root, { recursive: true, force: true }); }
 });

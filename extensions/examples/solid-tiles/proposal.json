@@ -1,0 +1,10 @@
+{
+  "baseLanguageVersion": "0.1.0",
+  "title": "Solid tiles: prevent movement onto named wall tiles",
+  "motivation": "A human requests an obstacle in a collectible game. Released v0.1 cannot represent it. This candidate implements a narrow destination-blocking mechanic, not a physics engine.",
+  "syntax": "wall Identifier at integer integer; inside a game, candidate target version 0.2.0 only. This syntax is not part of the released 0.1.0 language.",
+  "semantics": "Moving onto a wall returns the unchanged game state and collects nothing. All other moves use v0.1 semantics. Large deltas may cross walls. Player and collectibles cannot start on walls. Identifiers are globally unique; coordinates remain safe integers.",
+  "tests": "Use extensions/examples/solid-tiles/acceptance.json: blocked destination, detour and victory, large-delta semantics, invalid overlaps, duplicate IDs and unsafe coordinates. Verification also runs the unchanged released conformance baseline.",
+  "compatibility": "Existing v0.1 programs and active capability discovery remain unchanged. Only the separately selected candidate engine accepts wall. A signed maintainer approval and exact verified checkout are required for local trial; no automatic release or browser activation.",
+  "capabilities": ["solid-tiles"]
+}
