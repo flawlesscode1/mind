@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { ProposalStore, limits, authorizationPayload } from "../src/proposals.js";
+import { executeCandidate } from "../src/extension-candidates.js";
 import { compiledDigest, sourceDigest } from "../src/provenance.js";
 
 const input = JSON.parse(await readFile("extensions/examples/gravity-jumping.json", "utf8"));
@@ -136,6 +137,8 @@ test("new solid-tile semantics verify, await exact signed approval, and persist 
     await writeFile(buildPath, "{}"); await assert.rejects(store.trial(p.id, source, actions, keys), /fresh build/); await writeFile(buildPath, build);
     const trial = await store.trial(p.id, source, actions, keys);
     assert.equal(trial.candidateId, verified.candidate!.id); assert.equal(trial.verificationId, verified.verification!.id);
+    assert.deepEqual(trial.execution.actions, actions);
+    assert.deepEqual(executeCandidate(trial.execution.languageVersion, trial.source, trial.execution.actions).trace, trial.execution.trace);
     assert.equal(trial.execution.released, false); assert.equal(trial.execution.trace.at(-1)!.won, true);
     assert.deepEqual(trial.execution.trace[0], trial.execution.trace[1]);
     const stored = await store.get(p.id);

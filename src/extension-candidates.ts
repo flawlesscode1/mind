@@ -52,5 +52,5 @@ export function executeCandidate(version: string, source: string, actions: unkno
   let state = profile.engine.start(program);
   const trace: GameState[] = [state];
   for (const action of actions) { state = profile.engine.move(program, state, action.dx, action.dy); trace.push(state); }
-  return { candidate: profile.metadata.id, released: false, languageVersion: version, walls: program.walls, trace };
+  return { candidate: profile.metadata.id, released: false, languageVersion: version, actions: actions.map(a => ({ type: "move" as const, dx: a.dx as number, dy: a.dy as number })), walls: program.walls, trace };
 }
